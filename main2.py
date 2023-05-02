@@ -111,6 +111,10 @@ def power_iteration(A: np.ndarray, eps=10**-6, iter=100):
 
 
 def jacobi(A: np.ndarray, b: np.ndarray, x=None, iter=200, eps=10**-6):
+    q = check_sufficiency(A)
+    if not q:
+        print("The matrix does not sattisfy convergence criterion")
+        return
     n = A.shape[0]
     if not x:
         x = np.zeros((n, 1))
@@ -122,31 +126,73 @@ def jacobi(A: np.ndarray, b: np.ndarray, x=None, iter=200, eps=10**-6):
     for i in range(iter):
         print(f"iter {i}")
         print(f"x = {x.flatten()}")
-        print("x = D^-1 * (A - D) * x + D^-1 * b")
-        xs = np.matmul(np.matmul(Di, A), x) + np.matmul(Di, b)
-        print(join_mat(print_mat(xs), join_mat(print_mat(Di), join_mat(print_mat(A), join_mat(print_mat(x), join_mat(print_mat(Di), print_mat(b), '*'), '+'), '*'), '*'), '='))
-        if np.linalg.norm(x - xs) < eps:
+        print("x = D^-1 * b - D^-1 * (A - D) * x")
+        xs = np.matmul(Di, b) - np.matmul(np.matmul(Di, A), x)
+        print(join_mat(print_mat(x), join_mat(print_mat(Di), join_mat(print_mat(b), join_mat(print_mat(Di), join_mat(print_mat(A), print_mat(x), '*'), '*'), '-'), '*'), '='))
+        if eps > q**(i+1) / (1 - q):
             print(f"algorithm has converged to x = {xs.flatten()}")
             return
         x = xs
     print("iteration limit exceeded, algorithm diverges")
 
 
-'''
-A = np.array([[2, 3, -2, 3], [-2, -4, 5, 0], [7, -2, -3, 1], [0, -4, 4, -1]], dtype=np.float64)
-b = np.array([[2], [-3], [9], [1]], dtype=np.float64)
-#gaus(A, b)
-'''
+def check_sufficiency(A: np.ndarray):
+    n = A.shape[0]
+    q = -1
+    for i in range(n):
+        aii = np.abs(A[i, i])
+        row = np.linalg.norm(A[i], ord=1)
+        q_new = (row - aii) / aii
+        if q_new >= 1: return None
+        if q == -1: q = q_new
+        else: q = max(q, q_new)
+    return q
 
 
-'''
-m = np.array([[ 7, -3,  3], [-5,  7, -8], [-9, -4, -8]], dtype=np.float64)
-c = np.array([[6], [-4], [2]], dtype=np.float64)
+def print_info(A: np.ndarray):
+    A1 = inverse(np.copy(A))
+    print("inverse", A1, end='\n')
+    print("inverse norm", np.linalg.norm(A1, ord=2))
+    print("norm", np.linalg.norm(A, ord=2))
+    print("conditioning number", np.linalg.norm(A1, ord=2) * np.linalg.norm(A, ord=2))
 
-d = np.zeros((3, 3))
-for i in range(3): d[i, i] = m[i, i]
-di = np.linalg.inv(d)
-print(power_iteration(di @ (m - d)))
 
-#jacobi(m, c)
-'''
+def QR(A: np.ndarray):
+    n = A.shape[0]
+    cols = []
+    R = np.zeros((n, n), dtype=np.float64)
+    for i in range(n):
+        c = A[:, i].flatten()
+        for j in range(i):
+            R[j, i] = np.dot(cols[j], c)
+            c -= cols[j] * np.dot(cols[j], c)
+        if np.linalg.norm(c) == np.float64(0.0):
+            return None
+        R[i, i] = np.linalg.norm(c)
+        c /= np.linalg.norm(c)
+        cols.append(c)
+    return np.array(cols).T, R
+
+
+def inverse_R(R: np.ndarray):
+    n = R.shape[0]
+    R1 = np.zeros((n, n))
+    for i in range(n):
+        R1[i, i] = 1.0 / R[i, i]
+    for i in range(n-1, -1, -1):
+        for j in range(i+1, n):
+            R1[i, j] = - np.dot(R[i], R1[:, j].flatten()) / R[i, i]
+    return R1
+
+
+def inverse(A: np.ndarray):
+    if not QR(A):
+        return None
+    Q, R = QR(A)
+    return inverse_R(np.copy(R)) @ Q.T
+
+
+if __name__ == "__main__":
+    a = np.array([[10, 3, 2], [-4, 11, -1], [5, -1, 10]], dtype=np.float64)
+    b = np.array([[1], [1], [1]], dtype=np.float64)
+    print_info(a)
