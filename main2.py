@@ -132,20 +132,21 @@ def jacobi(A: np.ndarray, b: np.ndarray, x=None, iter=200, eps=10**-6):
     print("iteration limit exceeded, algorithm diverges")
 
 
+'''
 A = np.array([[2, 3, -2, 3], [-2, -4, 5, 0], [7, -2, -3, 1], [0, -4, 4, -1]], dtype=np.float64)
 b = np.array([[2], [-3], [9], [1]], dtype=np.float64)
 #gaus(A, b)
+'''
 
+
+'''
 m = np.array([[ 7, -3,  3], [-5,  7, -8], [-9, -4, -8]], dtype=np.float64)
 c = np.array([[6], [-4], [2]], dtype=np.float64)
 
-m1 = np.array([[-3, 4, 1], [9, -4, 2], [-1, 3, 1]], dtype=np.float64)
-c1 = np.array([[1], [-2], [9]], dtype=np.float64)
-
 d = np.zeros((3, 3))
-for i in range(3): d[i, i] = m1[i, i]
+for i in range(3): d[i, i] = m[i, i]
 di = np.linalg.inv(d)
-print(power_iteration(di @ (m1 - d)))
+print(power_iteration(di @ (m - d)))
 
-
-jacobi(m1, c1)
+#jacobi(m, c)
+'''
